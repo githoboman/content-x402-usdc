@@ -12,14 +12,16 @@
 (define-constant ERR-PAYMENT-FAILED (err u105))
 (define-constant PLATFORM-FEE-BPS u300) ;; 3% = 300 basis points
 
-;; sBTC Token Contract Reference (Testnet)
-;; For mainnet, use: 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
-;; For testnet, sBTC is available through the Hiro Platform faucet
-(define-constant SBTC-TOKEN 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token)
+;; Use the SIP-010 trait
+(use-trait sip-010-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
 
-;; TODO: Replace with actual USDC testnet contract when available
-;; For now, this is a placeholder - you'll need to deploy or find a testnet USDC contract
-;; (define-constant USDCX-TOKEN 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.usdc-token)
+;; sBTC Token Contract Reference
+;; For testnet/devnet, we use our mock contract
+(define-constant SBTC-TOKEN 'deployer.mock-sbtc)
+
+;; USDCx Token Contract Reference
+;; For testnet/devnet, we use our mock contract
+(define-constant USDCX-TOKEN 'deployer.mock-usdc)
 
 ;; Data Variables
 (define-data-var article-nonce uint u0)
@@ -196,20 +198,19 @@
     (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
     (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
     
-    ;; TODO: Implement actual sBTC transfer when token contract is available in simnet
-    ;; For now, just record the purchase (useful for testing)
-    ;; Example implementation (uncomment when sBTC contract is available):
-    ;; (try! (contract-call? SBTC-TOKEN transfer
-    ;;   writer-amount-sats
-    ;;   reader
-    ;;   author
-    ;;   none))
-    ;;
-    ;; (try! (contract-call? SBTC-TOKEN transfer
-    ;;   platform-fee-sats
-    ;;   reader
-    ;;   (var-get platform-treasury)
-    ;;   none))
+    ;; Transfer sBTC from reader to author (97%)
+    (try! (contract-call? SBTC-TOKEN transfer
+      writer-amount-sats
+      reader
+      author
+      none))
+
+    ;; Transfer sBTC platform fee (3%)
+    (try! (contract-call? SBTC-TOKEN transfer
+      platform-fee-sats
+      reader
+      (var-get platform-treasury)
+      none))
 
     ;; Record purchase
     (record-purchase article-id reader price "sBTC" author)
@@ -233,27 +234,27 @@
     (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
     (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
     
-    ;; TODO: Implement actual USDC transfer when token contract is available
-    ;; Example implementation (uncomment and update USDCX-TOKEN constant):
-    ;; (let
-    ;;   (
-    ;;     (writer-amount (calculate-writer-amount price))
-    ;;     (platform-fee (calculate-platform-fee price))
-    ;;   )
-    ;;   (try! (contract-call? USDCX-TOKEN transfer 
-    ;;     writer-amount 
-    ;;     reader 
-    ;;     author 
-    ;;     none))
-    ;;   
-    ;;   (try! (contract-call? USDCX-TOKEN transfer 
-    ;;     platform-fee 
-    ;;     reader 
-    ;;     (var-get platform-treasury) 
-    ;;     none))
-    ;; )
+    (let
+      (
+        (writer-amount (calculate-writer-amount price))
+        (platform-fee (calculate-platform-fee price))
+      )
+      ;; Transfer USDCx from reader to author (97%)
+      (try! (contract-call? USDCX-TOKEN transfer 
+        writer-amount 
+        reader 
+        author 
+        none))
+      
+      ;; Transfer USDCx platform fee (3%)
+      (try! (contract-call? USDCX-TOKEN transfer 
+        platform-fee 
+        reader 
+        (var-get platform-treasury) 
+        none))
+    )
     
-    ;; For now, just record the purchase (useful for testing)
+    ;; Record purchase
     (record-purchase article-id reader price "USDCx" author)
   )
 )

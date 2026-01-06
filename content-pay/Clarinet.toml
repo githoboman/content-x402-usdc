@@ -11,3 +11,13 @@ requirements = []
 path = "contracts/content-registry.clar"
 clarity_version = 2
 epoch = 2.5
+
+[contracts.mock-usdc]
+path = "contracts/mock-usdc.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.mock-sbtc]
+path = "contracts/mock-sbtc.clar"
+clarity_version = 2
+epoch = 2.5
