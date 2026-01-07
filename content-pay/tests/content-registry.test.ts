@@ -9,16 +9,18 @@ const writer2 = accounts.get('wallet_2')!;
 const reader1 = accounts.get('wallet_3')!;
 const reader2 = accounts.get('wallet_4')!;
 
-// Initialize token contracts for tests
-simnet.callPublicFn(
-  'content-registry',
-  'initialize-contracts',
-  [
-    Cl.principal(`${deployer}.mock-sbtc`),
-    Cl.principal(`${deployer}.mock-usdc`)
-  ],
-  deployer
-);
+// Helper function to initialize contracts
+function initializeContracts() {
+  simnet.callPublicFn(
+    'content-registry',
+    'initialize-contracts',
+    [
+      Cl.principal(`${deployer}.mock-sbtc`),
+      Cl.principal(`${deployer}.mock-usdc`)
+    ],
+    deployer
+  );
+}
 
 // Helper function to mine blocks
 function mineBlocks(count: number) {
@@ -32,7 +34,23 @@ function getCurrentBlockHeight(): number {
 
 // Helper to get tuple value from ClarityResult
 function getTupleValue(result: { result: ClarityValue }): any {
-  return (result.result as any).value;
+  const clarityValue = result.result as any;
+  
+  // Handle optional types
+  if (clarityValue.type === 'optional' && clarityValue.value) {
+    return clarityValue.value.data;
+  }
+  
+  // Handle response types
+  if (clarityValue.type === 'response') {
+    if (clarityValue.ok) {
+      return clarityValue.value;
+    }
+    return null; // Error response
+  }
+  
+  // Handle regular data values
+  return clarityValue.data || clarityValue.value;
 }
 
 describe('Content Registry - Article Publishing', () => {
@@ -215,6 +233,8 @@ describe('Content Registry - STX Purchases', () => {
 
 describe('Content Registry - USDCx Purchases', () => {
   beforeEach(() => {
+    initializeContracts();
+    
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
@@ -332,6 +352,8 @@ describe('Content Registry - USDCx Purchases', () => {
 
 describe('Content Registry - sBTC Purchases', () => {
   beforeEach(() => {
+    initializeContracts();
+    
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
@@ -391,6 +413,8 @@ describe('Content Registry - sBTC Purchases', () => {
 
 describe('Content Registry - Mixed Token Purchases', () => {
   beforeEach(() => {
+    initializeContracts();
+    
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
