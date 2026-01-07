@@ -17,6 +17,11 @@ path = "contracts/mock-usdc.clar"
 clarity_version = 2
 epoch = 2.5
 
+[contracts.sip-010-trait-ft-standard]
+path = "contracts/sip-010-trait-ft-standard.clar"
+clarity_version = 2
+epoch = 2.5
+
 [contracts.mock-sbtc]
 path = "contracts/mock-sbtc.clar"
 clarity_version = 2

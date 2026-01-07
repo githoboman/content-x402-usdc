@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { Cl } from '@stacks/transactions';
+import type { ClarityValue } from '@stacks/transactions';
 
 const accounts = simnet.getAccounts();
 const deployer = accounts.get('deployer')!;
@@ -7,6 +8,14 @@ const writer1 = accounts.get('wallet_1')!;
 const writer2 = accounts.get('wallet_2')!;
 const reader1 = accounts.get('wallet_3')!;
 const reader2 = accounts.get('wallet_4')!;
+
+// Initialize token contracts for tests
+simnet.callPublicFn(
+  'content-registry',
+  'initialize-contracts',
+  [Cl.principal('ST1PQHQKV0RJ0FY1JXKBPR4JKNV09J5ZZVVACM3JD.mock-sbtc'), Cl.principal('ST1PQHQKV0RJ0FY1JXKBPR4JKNV09J5ZZVVACM3JD.mock-usdc')],
+  deployer
+);
 
 // Helper function to mine blocks
 function mineBlocks(count: number) {
@@ -16,6 +25,11 @@ function mineBlocks(count: number) {
 // Helper function to get current block height
 function getCurrentBlockHeight(): number {
   return simnet.blockHeight;
+}
+
+// Helper to get tuple value from ClarityResult
+function getTupleValue(result: { result: ClarityValue }): any {
+  return (result.result as any).value;
 }
 
 describe('Content Registry - Article Publishing', () => {
@@ -42,8 +56,8 @@ describe('Content Registry - Article Publishing', () => {
       deployer
     );
 
-    expect(article.result).toBeSome();
-    const articleData = article.result.value;
+    expect(article.result).toBeTruthy(); // Verify article exists
+    const articleData = getTupleValue(article);
     expect(articleData['title']).toStrictEqual(Cl.stringAscii('My First Article'));
     expect(articleData['price-usd']).toStrictEqual(Cl.uint(50));
     expect(articleData['is-active']).toStrictEqual(Cl.bool(true));
@@ -201,8 +215,16 @@ describe('Content Registry - USDCx Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
-      [Cl.stringAscii('Premium Article'), Cl.stringAscii('QmHash'), Cl.uint(50), Cl.stringAscii('tech')],
+      [Cl.stringAscii('Test Article'), Cl.stringAscii('QmHash'), Cl.uint(50), Cl.stringAscii('tech')],
       writer1
+    );
+
+    // Mint USDCx to reader1
+    simnet.callPublicFn(
+      'mock-usdc',
+      'mint',
+      [Cl.uint(100000000), Cl.principal(reader1)],
+      deployer
     );
   });
 
@@ -224,8 +246,8 @@ describe('Content Registry - USDCx Purchases', () => {
       deployer
     );
 
-    expect(purchaseInfo.result).toBeSome();
-    const info = purchaseInfo.result.value;
+    expect(purchaseInfo.result).toBeTruthy(); // Verify purchase exists
+    const info = getTupleValue(purchaseInfo);
     expect(info['token-used']).toStrictEqual(Cl.stringAscii('USDCx'));
   });
 
@@ -262,7 +284,7 @@ describe('Content Registry - USDCx Purchases', () => {
       deployer
     );
 
-    const writerStats = stats.result;
+    const writerStats = getTupleValue(stats);
     expect(writerStats['total-sales']).toStrictEqual(Cl.uint(1));
     // 97% of $0.50 = $0.485 = 48 cents (integer division)
     expect(writerStats['total-earnings']).toStrictEqual(Cl.uint(48));
@@ -290,7 +312,7 @@ describe('Content Registry - USDCx Purchases', () => {
       deployer
     );
 
-    const writerStats = stats.result;
+    const writerStats = getTupleValue(stats);
     expect(writerStats['total-sales']).toStrictEqual(Cl.uint(2));
     // 2 * 48 cents = 96 cents
     expect(writerStats['total-earnings']).toStrictEqual(Cl.uint(96));
@@ -302,8 +324,16 @@ describe('Content Registry - sBTC Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
-      [Cl.stringAscii('Bitcoin Article'), Cl.stringAscii('QmHash'), Cl.uint(50), Cl.stringAscii('bitcoin')],
+      [Cl.stringAscii('Test Article'), Cl.stringAscii('QmHash'), Cl.uint(50), Cl.stringAscii('tech')],
       writer1
+    );
+
+    // Mint sBTC to reader1
+    simnet.callPublicFn(
+      'mock-sbtc',
+      'mint',
+      [Cl.uint(100000000), Cl.principal(reader1)],
+      deployer
     );
   });
 
@@ -325,7 +355,7 @@ describe('Content Registry - sBTC Purchases', () => {
       deployer
     );
 
-    const info = purchaseInfo.result.value;
+    const info = getTupleValue(purchaseInfo);
     expect(info['token-used']).toStrictEqual(Cl.stringAscii('sBTC'));
   });
 
@@ -353,9 +383,13 @@ describe('Content Registry - Mixed Token Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
-      [Cl.stringAscii('Multi-Token Article'), Cl.stringAscii('QmHash'), Cl.uint(100), Cl.stringAscii('tech')],
+      [Cl.stringAscii('Test Article'), Cl.stringAscii('QmHash'), Cl.uint(50), Cl.stringAscii('tech')],
       writer1
     );
+
+    // Mint tokens to readers
+    simnet.callPublicFn('mock-usdc', 'mint', [Cl.uint(100000000), Cl.principal(reader1)], deployer);
+    simnet.callPublicFn('mock-sbtc', 'mint', [Cl.uint(100000000), Cl.principal(reader1)], deployer);
   });
 
   it('different users can use different tokens for same article', () => {
@@ -407,7 +441,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
       [Cl.uint(1), Cl.principal(reader1)],
       deployer
     );
-    expect(purchase1.result.value['token-used']).toStrictEqual(Cl.stringAscii('USDCx'));
+    expect(getTupleValue(purchase1)['token-used']).toStrictEqual(Cl.stringAscii('USDCx'));
 
     const purchase2 = simnet.callReadOnlyFn(
       'content-registry',
@@ -415,7 +449,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
       [Cl.uint(2), Cl.principal(reader2)],
       deployer
     );
-    expect(purchase2.result.value['token-used']).toStrictEqual(Cl.stringAscii('STX'));
+    expect(getTupleValue(purchase2)['token-used']).toStrictEqual(Cl.stringAscii('STX'));
   });
 
   it('same user can purchase different articles with different tokens', () => {
@@ -462,7 +496,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
       deployer
     );
 
-    const readerStats = stats.result;
+    const readerStats = getTupleValue(stats);
     expect(readerStats['total-purchases']).toStrictEqual(Cl.uint(3));
     expect(readerStats['total-spent']).toStrictEqual(Cl.uint(300)); // 100 + 50 + 150
   });
@@ -491,7 +525,7 @@ describe('Content Registry - Writer Stats', () => {
       deployer
     );
 
-    const writerStats = stats.result;
+    const writerStats = getTupleValue(stats);
     expect(writerStats['total-articles']).toStrictEqual(Cl.uint(2));
     expect(writerStats['total-earnings']).toStrictEqual(Cl.uint(0)); // No sales yet
   });
@@ -518,7 +552,7 @@ describe('Content Registry - Writer Stats', () => {
       deployer
     );
 
-    const writerStats = stats.result;
+    const writerStats = getTupleValue(stats);
     expect(writerStats['total-sales']).toStrictEqual(Cl.uint(1));
     // 97% of $1.00 = $0.97 = 97 cents
     expect(writerStats['total-earnings']).toStrictEqual(Cl.uint(97));
@@ -568,7 +602,7 @@ describe('Content Registry - Writer Stats', () => {
       deployer
     );
 
-    const writerStats = stats.result;
+    const writerStats = getTupleValue(stats);
     expect(writerStats['total-sales']).toStrictEqual(Cl.uint(3));
     // (50 * 0.97) + (100 * 0.97) + (50 * 0.97) = 48 + 97 + 48 = 193 cents
     expect(writerStats['total-earnings']).toStrictEqual(Cl.uint(193));
@@ -612,7 +646,7 @@ describe('Content Registry - Platform Stats', () => {
       deployer
     );
 
-    const platformStats = stats.result;
+    const platformStats = getTupleValue(stats);
     expect(platformStats['total-articles']).toStrictEqual(Cl.uint(2));
     expect(platformStats['total-revenue']).toStrictEqual(Cl.uint(0)); // Revenue not tracked in purchases
     expect(platformStats['platform-fee']).toStrictEqual(Cl.uint(300)); // 3% = 300 bps
@@ -700,7 +734,8 @@ describe('Content Registry - Article Management', () => {
       deployer
     );
 
-    expect(article.result.value['is-active']).toStrictEqual(Cl.bool(false));
+    const articleData = getTupleValue(article);
+    expect(articleData['is-active']).toStrictEqual(Cl.bool(false));
   });
 
   it('only author can update price', () => {
@@ -731,7 +766,8 @@ describe('Content Registry - Article Management', () => {
       deployer
     );
 
-    expect(article.result.value['price-usd']).toStrictEqual(Cl.uint(100));
+    const articleData = getTupleValue(article);
+    expect(articleData['price-usd']).toStrictEqual(Cl.uint(100));
   });
 
   it('cannot update price to zero', () => {
@@ -764,7 +800,8 @@ describe('Content Registry - Block Height Usage', () => {
       deployer
     );
 
-    const publishedAt = article.result.value['published-at'];
+    const articleData = getTupleValue(article);
+    const publishedAt = articleData['published-at'];
     expect(publishedAt).toStrictEqual(Cl.uint(startHeight));
   });
 
@@ -794,7 +831,8 @@ describe('Content Registry - Block Height Usage', () => {
       deployer
     );
 
-    const purchasedAt = purchaseInfo.result.value['purchased-at'];
+    const purchaseData = getTupleValue(purchaseInfo);
+    const purchasedAt = purchaseData['purchased-at'];
     expect(purchasedAt).toStrictEqual(Cl.uint(purchaseHeight));
   });
 });

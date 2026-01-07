@@ -10,24 +10,19 @@
 (define-constant ERR-ALREADY-PURCHASED (err u103))
 (define-constant ERR-INVALID-TOKEN (err u104))
 (define-constant ERR-PAYMENT-FAILED (err u105))
+(define-constant ERR-NOT-INITIALIZED (err u106))
 (define-constant PLATFORM-FEE-BPS u300) ;; 3% = 300 basis points
 
-;; Use the SIP-010 trait
-(use-trait sip-010-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
-
-;; sBTC Token Contract Reference
-;; For testnet/devnet, we use our mock contract
-(define-constant SBTC-TOKEN 'deployer.mock-sbtc)
-
-;; USDCx Token Contract Reference
-;; For testnet/devnet, we use our mock contract
-(define-constant USDCX-TOKEN 'deployer.mock-usdc)
+;; Token contract addresses (set during initialization for simnet)
+(define-data-var sbtc-token (optional principal) none)
+(define-data-var usdcx-token (optional principal) none)
 
 ;; Data Variables
 (define-data-var article-nonce uint u0)
 (define-data-var platform-treasury principal CONTRACT-OWNER)
 (define-data-var total-articles uint u0)
 (define-data-var total-revenue uint u0)
+(define-data-var initialized bool false)
 
 ;; Article metadata
 (define-map articles
@@ -118,6 +113,18 @@
   (/ (* price-usd u3) u100)
 )
 
+;; Initialization function for setting token contracts
+(define-public (initialize-contracts (sbtc principal) (usdcx principal))
+   (begin
+     (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+     (asserts! (not (var-get initialized)) ERR-NOT-AUTHORIZED)
+     (var-set sbtc-token (some sbtc))
+     (var-set usdcx-token (some usdcx))
+     (var-set initialized true)
+     (ok true)
+   )
+)
+
 ;; Public functions
 
 (define-public (publish-article 
@@ -185,78 +192,76 @@
 
 ;; Purchase with sBTC (TESTNET READY)
 (define-public (purchase-with-sbtc (article-id uint))
-  (let
-    (
-      (article (unwrap! (map-get? articles article-id) ERR-ARTICLE-NOT-FOUND))
-      (reader tx-sender)
-      (author (get author article))
-      (price (get price-usd article))
-      (writer-amount-sats (calculate-writer-amount price))
-      (platform-fee-sats (calculate-platform-fee price))
-    )
-    ;; Validations
-    (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
-    (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
-    
-    ;; Transfer sBTC from reader to author (97%)
-    (try! (contract-call? SBTC-TOKEN transfer
-      writer-amount-sats
-      reader
-      author
-      none))
+   (let
+     (
+       (article (unwrap! (map-get? articles article-id) ERR-ARTICLE-NOT-FOUND))
+       (reader tx-sender)
+       (author (get author article))
+       (price (get price-usd article))
+       (writer-amount-sats (calculate-writer-amount price))
+       (platform-fee-sats (calculate-platform-fee price))
+       (sbtc-contract (unwrap! (var-get sbtc-token) ERR-NOT-INITIALIZED))
+     )
+     ;; Validations
+     (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
+     (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
 
-    ;; Transfer sBTC platform fee (3%)
-    (try! (contract-call? SBTC-TOKEN transfer
-      platform-fee-sats
-      reader
-      (var-get platform-treasury)
-      none))
+     ;; Transfer sBTC from reader to author (97%)
+     (try! (contract-call? sbtc-contract transfer?
+       writer-amount-sats
+       reader
+       author
+       none))
 
-    ;; Record purchase
-    (record-purchase article-id reader price "sBTC" author)
-  )
+     ;; Transfer sBTC platform fee (3%)
+     (try! (contract-call? sbtc-contract transfer?
+       platform-fee-sats
+       reader
+       (var-get platform-treasury)
+       none))
+
+     ;; Record purchase
+     (record-purchase article-id reader price "sBTC" author)
+   )
 )
 
-;; Purchase with USDCx (PLACEHOLDER - Update with actual USDC contract)
-;; NOTE: For testnet, you'll need to either:
-;; 1. Deploy your own mock USDC SIP-010 token for testing
-;; 2. Find an existing testnet USDC token contract
-;; 3. Use this placeholder version that just records the purchase
+;; Purchase with USDCx
 (define-public (purchase-with-usdcx (article-id uint))
-  (let
-    (
-      (article (unwrap! (map-get? articles article-id) ERR-ARTICLE-NOT-FOUND))
-      (reader tx-sender)
-      (author (get author article))
-      (price (get price-usd article))
-    )
-    ;; Validations
-    (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
-    (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
-    
-    (let
-      (
-        (writer-amount (calculate-writer-amount price))
-        (platform-fee (calculate-platform-fee price))
-      )
-      ;; Transfer USDCx from reader to author (97%)
-      (try! (contract-call? USDCX-TOKEN transfer 
-        writer-amount 
-        reader 
-        author 
-        none))
-      
-      ;; Transfer USDCx platform fee (3%)
-      (try! (contract-call? USDCX-TOKEN transfer 
-        platform-fee 
-        reader 
-        (var-get platform-treasury) 
-        none))
-    )
-    
-    ;; Record purchase
-    (record-purchase article-id reader price "USDCx" author)
-  )
+   (let
+     (
+       (article (unwrap! (map-get? articles article-id) ERR-ARTICLE-NOT-FOUND))
+       (reader tx-sender)
+       (author (get author article))
+       (price (get price-usd article))
+       (usdcx-contract (unwrap! (var-get usdcx-token) ERR-NOT-INITIALIZED))
+     )
+     ;; Validations
+     (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
+     (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
+
+     (let
+       (
+         (writer-amount (calculate-writer-amount price))
+         (platform-fee (calculate-platform-fee price))
+       )
+       ;; Transfer USDCx from reader to author (97%)
+       (try! (contract-call? usdcx-contract transfer?
+         writer-amount
+         reader
+         author
+         none))
+
+       ;; Transfer USDCx platform fee (3%)
+       (try! (contract-call? usdcx-contract transfer?
+         platform-fee
+         reader
+         (var-get platform-treasury)
+         none))
+     )
+
+     ;; Record purchase
+     (record-purchase article-id reader price "USDCx" author)
+   )
 )
 
 (define-public (deactivate-article (article-id uint))

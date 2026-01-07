@@ -68,4 +68,14 @@ plan:
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/content-registry.clar
             clarity-version: 2
+        - emulated-contract-publish:
+            contract-name: mock-sbtc
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/mock-sbtc.clar
+            clarity-version: 2
+        - emulated-contract-publish:
+            contract-name: mock-usdc
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/mock-usdc.clar
+            clarity-version: 2
       epoch: "2.5"
