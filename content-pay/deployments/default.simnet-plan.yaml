@@ -64,6 +64,11 @@ plan:
     - id: 0
       transactions:
         - emulated-contract-publish:
+            contract-name: sip-010-trait-ft-standard
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/sip-010-trait-ft-standard.clar
+            clarity-version: 2
+        - emulated-contract-publish:
             contract-name: content-registry
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/content-registry.clar

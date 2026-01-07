@@ -1,4 +1,3 @@
-
 [project]
 name = "content-pay"
 authors = []
@@ -7,8 +6,13 @@ telemetry = true
 cache_dir = ".cache"
 requirements = []
 
-[contracts.content-registry]
-path = "contracts/content-registry.clar"
+[contracts.sip-010-trait-ft-standard]
+path = "contracts/sip-010-trait-ft-standard.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.mock-sbtc]
+path = "contracts/mock-sbtc.clar"
 clarity_version = 2
 epoch = 2.5
 
@@ -17,12 +21,7 @@ path = "contracts/mock-usdc.clar"
 clarity_version = 2
 epoch = 2.5
 
-[contracts.sip-010-trait-ft-standard]
-path = "contracts/sip-010-trait-ft-standard.clar"
-clarity_version = 2
-epoch = 2.5
-
-[contracts.mock-sbtc]
-path = "contracts/mock-sbtc.clar"
+[contracts.content-registry]
+path = "contracts/content-registry.clar"
 clarity_version = 2
 epoch = 2.5

@@ -13,7 +13,10 @@ const reader2 = accounts.get('wallet_4')!;
 simnet.callPublicFn(
   'content-registry',
   'initialize-contracts',
-  [Cl.principal('ST1PQHQKV0RJ0FY1JXKBPR4JKNV09J5ZZVVACM3JD.mock-sbtc'), Cl.principal('ST1PQHQKV0RJ0FY1JXKBPR4JKNV09J5ZZVVACM3JD.mock-usdc')],
+  [
+    Cl.principal(`${deployer}.mock-sbtc`),
+    Cl.principal(`${deployer}.mock-usdc`)
+  ],
   deployer
 );
 
@@ -232,7 +235,7 @@ describe('Content Registry - USDCx Purchases', () => {
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
 
@@ -255,14 +258,14 @@ describe('Content Registry - USDCx Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
 
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
 
@@ -273,7 +276,7 @@ describe('Content Registry - USDCx Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
 
@@ -291,17 +294,25 @@ describe('Content Registry - USDCx Purchases', () => {
   });
 
   it('multiple users can purchase with USDCx', () => {
+    // Mint tokens to reader2
+    simnet.callPublicFn(
+      'mock-usdc',
+      'mint',
+      [Cl.uint(100000000), Cl.principal(reader2)],
+      deployer
+    );
+
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
 
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader2
     );
 
@@ -341,7 +352,7 @@ describe('Content Registry - sBTC Purchases', () => {
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc')],
       reader1
     );
 
@@ -363,14 +374,14 @@ describe('Content Registry - sBTC Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc')],
       reader1
     );
 
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc')],
       reader1
     );
 
@@ -390,6 +401,8 @@ describe('Content Registry - Mixed Token Purchases', () => {
     // Mint tokens to readers
     simnet.callPublicFn('mock-usdc', 'mint', [Cl.uint(100000000), Cl.principal(reader1)], deployer);
     simnet.callPublicFn('mock-sbtc', 'mint', [Cl.uint(100000000), Cl.principal(reader1)], deployer);
+    simnet.callPublicFn('mock-usdc', 'mint', [Cl.uint(100000000), Cl.principal(reader2)], deployer);
+    simnet.callPublicFn('mock-sbtc', 'mint', [Cl.uint(100000000), Cl.principal(reader2)], deployer);
   });
 
   it('different users can use different tokens for same article', () => {
@@ -412,7 +425,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
 
@@ -428,7 +441,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
     const sbtcResult = simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(3)],
+      [Cl.uint(3), Cl.contractPrincipal(deployer, 'mock-sbtc')],
       reader1
     );
 
@@ -471,7 +484,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
 
@@ -485,7 +498,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(3)],
+      [Cl.uint(3), Cl.contractPrincipal(deployer, 'mock-sbtc')],
       reader1
     );
 
@@ -498,7 +511,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
 
     const readerStats = getTupleValue(stats);
     expect(readerStats['total-purchases']).toStrictEqual(Cl.uint(3));
-    expect(readerStats['total-spent']).toStrictEqual(Cl.uint(300)); // 100 + 50 + 150
+    expect(readerStats['total-spent']).toStrictEqual(Cl.uint(250)); // 50 + 50 + 150
   });
 });
 
@@ -648,7 +661,7 @@ describe('Content Registry - Platform Stats', () => {
 
     const platformStats = getTupleValue(stats);
     expect(platformStats['total-articles']).toStrictEqual(Cl.uint(2));
-    expect(platformStats['total-revenue']).toStrictEqual(Cl.uint(0)); // Revenue not tracked in purchases
+    expect(platformStats['total-revenue']).toStrictEqual(Cl.uint(150)); // 50 + 100
     expect(platformStats['platform-fee']).toStrictEqual(Cl.uint(300)); // 3% = 300 bps
   });
 });

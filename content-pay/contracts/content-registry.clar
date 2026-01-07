@@ -2,6 +2,9 @@
 ;; Micropayment content platform with multi-token support (USDCx, STX, sBTC)
 ;; TESTNET READY VERSION
 
+;; Import the SIP-010 trait
+(use-trait sip-010-trait .sip-010-trait-ft-standard.sip-010-trait)
+
 ;; Constants
 (define-constant CONTRACT-OWNER tx-sender)
 (define-constant ERR-NOT-AUTHORIZED (err u100))
@@ -190,8 +193,8 @@
   )
 )
 
-;; Purchase with sBTC (TESTNET READY)
-(define-public (purchase-with-sbtc (article-id uint))
+;; Purchase with sBTC (using trait parameter)
+(define-public (purchase-with-sbtc (article-id uint) (token-contract <sip-010-trait>))
    (let
      (
        (article (unwrap! (map-get? articles article-id) ERR-ARTICLE-NOT-FOUND))
@@ -200,21 +203,23 @@
        (price (get price-usd article))
        (writer-amount-sats (calculate-writer-amount price))
        (platform-fee-sats (calculate-platform-fee price))
-       (sbtc-contract (unwrap! (var-get sbtc-token) ERR-NOT-INITIALIZED))
      )
      ;; Validations
      (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
      (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
+     
+     ;; Verify this is the correct token
+     (asserts! (is-eq (contract-of token-contract) (unwrap! (var-get sbtc-token) ERR-NOT-INITIALIZED)) ERR-INVALID-TOKEN)
 
      ;; Transfer sBTC from reader to author (97%)
-     (try! (contract-call? sbtc-contract transfer?
+     (try! (contract-call? token-contract transfer?
        writer-amount-sats
        reader
        author
        none))
 
      ;; Transfer sBTC platform fee (3%)
-     (try! (contract-call? sbtc-contract transfer?
+     (try! (contract-call? token-contract transfer?
        platform-fee-sats
        reader
        (var-get platform-treasury)
@@ -225,39 +230,37 @@
    )
 )
 
-;; Purchase with USDCx
-(define-public (purchase-with-usdcx (article-id uint))
+;; Purchase with USDCx (using trait parameter)
+(define-public (purchase-with-usdcx (article-id uint) (token-contract <sip-010-trait>))
    (let
      (
        (article (unwrap! (map-get? articles article-id) ERR-ARTICLE-NOT-FOUND))
        (reader tx-sender)
        (author (get author article))
        (price (get price-usd article))
-       (usdcx-contract (unwrap! (var-get usdcx-token) ERR-NOT-INITIALIZED))
+       (writer-amount (calculate-writer-amount price))
+       (platform-fee (calculate-platform-fee price))
      )
      ;; Validations
      (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
      (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
+     
+     ;; Verify this is the correct token
+     (asserts! (is-eq (contract-of token-contract) (unwrap! (var-get usdcx-token) ERR-NOT-INITIALIZED)) ERR-INVALID-TOKEN)
 
-     (let
-       (
-         (writer-amount (calculate-writer-amount price))
-         (platform-fee (calculate-platform-fee price))
-       )
-       ;; Transfer USDCx from reader to author (97%)
-       (try! (contract-call? usdcx-contract transfer?
-         writer-amount
-         reader
-         author
-         none))
+     ;; Transfer USDCx from reader to author (97%)
+     (try! (contract-call? token-contract transfer?
+       writer-amount
+       reader
+       author
+       none))
 
-       ;; Transfer USDCx platform fee (3%)
-       (try! (contract-call? usdcx-contract transfer?
-         platform-fee
-         reader
-         (var-get platform-treasury)
-         none))
-     )
+     ;; Transfer USDCx platform fee (3%)
+     (try! (contract-call? token-contract transfer?
+       platform-fee
+       reader
+       (var-get platform-treasury)
+       none))
 
      ;; Record purchase
      (record-purchase article-id reader price "USDCx" author)
