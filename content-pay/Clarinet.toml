@@ -21,6 +21,16 @@ path = "contracts/mock-usdc.clar"
 clarity_version = 2
 epoch = 2.5
 
+[contracts.pyth-oracle-trait]
+path = "contracts/pyth-oracle-trait.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.mock-pyth-oracle]
+path = "contracts/mock-pyth-oracle.clar"
+clarity_version = 2
+epoch = 2.5
+
 [contracts.content-registry]
 path = "contracts/content-registry.clar"
 clarity_version = 2

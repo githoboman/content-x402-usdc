@@ -64,6 +64,11 @@ plan:
     - id: 0
       transactions:
         - emulated-contract-publish:
+            contract-name: pyth-oracle-trait
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/pyth-oracle-trait.clar
+            clarity-version: 2
+        - emulated-contract-publish:
             contract-name: sip-010-trait-ft-standard
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/sip-010-trait-ft-standard.clar
@@ -72,6 +77,11 @@ plan:
             contract-name: content-registry
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/content-registry.clar
+            clarity-version: 2
+        - emulated-contract-publish:
+            contract-name: mock-pyth-oracle
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/mock-pyth-oracle.clar
             clarity-version: 2
         - emulated-contract-publish:
             contract-name: mock-sbtc

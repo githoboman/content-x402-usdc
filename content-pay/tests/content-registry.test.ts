@@ -9,6 +9,11 @@ const writer2 = accounts.get('wallet_2')!;
 const reader1 = accounts.get('wallet_3')!;
 const reader2 = accounts.get('wallet_4')!;
 
+// Mock Feed IDs
+const STX_FEED_ID = '0100000000000000000000000000000000000000000000000000000000000000';
+const BTC_FEED_ID = '0200000000000000000000000000000000000000000000000000000000000000';
+const USDC_FEED_ID = '0300000000000000000000000000000000000000000000000000000000000000';
+
 // Helper function to initialize contracts
 function initializeContracts() {
   simnet.callPublicFn(
@@ -16,10 +21,19 @@ function initializeContracts() {
     'initialize-contracts',
     [
       Cl.principal(`${deployer}.mock-sbtc`),
-      Cl.principal(`${deployer}.mock-usdc`)
+      Cl.principal(`${deployer}.mock-usdc`),
+      Cl.principal(`${deployer}.mock-pyth-oracle`)
     ],
     deployer
   );
+
+  // Set default prices in Oracle
+  // STX = $0.50 (50000000, expo -8)
+  simnet.callPublicFn('mock-pyth-oracle', 'set-price', [Cl.bufferFromHex(STX_FEED_ID), Cl.int(50000000), Cl.int(-8)], deployer);
+  // BTC = $50,000 (5000000000000, expo -8)
+  simnet.callPublicFn('mock-pyth-oracle', 'set-price', [Cl.bufferFromHex(BTC_FEED_ID), Cl.int(5000000000000), Cl.int(-8)], deployer);
+  // USDC = $1.00 (100000000, expo -8)
+  simnet.callPublicFn('mock-pyth-oracle', 'set-price', [Cl.bufferFromHex(USDC_FEED_ID), Cl.int(100000000), Cl.int(-8)], deployer);
 }
 
 // Helper function to mine blocks
@@ -164,6 +178,7 @@ describe('Content Registry - Article Publishing', () => {
 
 describe('Content Registry - STX Purchases', () => {
   beforeEach(() => {
+    initializeContracts();
     // Publish an article before each test
     simnet.callPublicFn(
       'content-registry',
@@ -173,13 +188,19 @@ describe('Content Registry - STX Purchases', () => {
     );
   });
 
-  it('can purchase article with STX', () => {
+  it('can purchase article with STX (calculated amount)', () => {
+    // Price $0.50 (50 cents). STX = $0.50 (50000000, -8). 
+    // Calculation: 50 * 10^12 / 50000000 = 1,000,000 uSTX = 1 STX.
+
+    // Set STX to exactly $0.50 for clarity
+    simnet.callPublicFn('mock-pyth-oracle', 'set-price', [Cl.bufferFromHex(STX_FEED_ID), Cl.int(50000000), Cl.int(-8)], deployer);
+
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
       [
         Cl.uint(1), // article-id
-        Cl.uint(625000) // 0.625 STX (equivalent to $0.50)
+        Cl.contractPrincipal(deployer, 'mock-pyth-oracle')
       ],
       reader1
     );
@@ -195,6 +216,16 @@ describe('Content Registry - STX Purchases', () => {
     );
 
     expect(hasPurchased.result).toStrictEqual(Cl.bool(true));
+
+    // Verify amount recorded is the calculated amount (1,000,000 uSTX)
+    const purchaseInfo = simnet.callReadOnlyFn(
+      'content-registry',
+      'get-purchase-info',
+      [Cl.uint(1), Cl.principal(reader1)],
+      deployer
+    );
+    const info = getTupleValue(purchaseInfo);
+    expect(info['amount-paid']).toStrictEqual(Cl.uint(1000000));
   });
 
   it('cannot purchase same article twice', () => {
@@ -202,7 +233,7 @@ describe('Content Registry - STX Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(625000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -210,7 +241,7 @@ describe('Content Registry - STX Purchases', () => {
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(625000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -221,7 +252,7 @@ describe('Content Registry - STX Purchases', () => {
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(999), Cl.uint(625000)],
+      [Cl.uint(999), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -241,7 +272,7 @@ describe('Content Registry - STX Purchases', () => {
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(625000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -273,7 +304,10 @@ describe('Content Registry - USDCx Purchases', () => {
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
-      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
+      [
+        Cl.uint(1),
+        Cl.contractPrincipal(deployer, 'mock-usdc')
+      ],
       reader1
     );
 
@@ -290,6 +324,7 @@ describe('Content Registry - USDCx Purchases', () => {
     expect(purchaseInfo.result).toBeTruthy(); // Verify purchase exists
     const info = getTupleValue(purchaseInfo);
     expect(info['token-used']).toStrictEqual(Cl.stringAscii('USDCx'));
+    expect(info['amount-paid']).toStrictEqual(Cl.uint(500000));
   });
 
   it('cannot purchase same article twice with USDCx', () => {
@@ -375,7 +410,7 @@ describe('Content Registry - sBTC Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
-      [Cl.stringAscii('Test Article'), Cl.stringAscii('QmHash'), Cl.uint(50), Cl.stringAscii('tech')],
+      [Cl.stringAscii('Test Article'), Cl.stringAscii('QmHash'), Cl.uint(5000), Cl.stringAscii('tech')],
       writer1
     );
 
@@ -388,11 +423,21 @@ describe('Content Registry - sBTC Purchases', () => {
     );
   });
 
-  it('can purchase article with sBTC', () => {
+  it('can purchase article with sBTC (calculated amount)', () => {
+    // Price $50 (5000 cents). BTC = $50,000. 
+    // Decimals 8. Oracle $50,000 (5,000,000,000,000, -8).
+    // Power = 8 - 2 - (-8) = 14.
+    // Numerator = 5000 * 10^14 = 5 * 10^17.
+    // Result = 5 * 10^17 / 5 * 10^12 = 100,000 sats (0.001 BTC). $50 is 1/1000 of $50k. Correct.
+
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc')],
+      [
+        Cl.uint(1),
+        Cl.contractPrincipal(deployer, 'mock-sbtc'),
+        Cl.contractPrincipal(deployer, 'mock-pyth-oracle')
+      ],
       reader1
     );
 
@@ -408,20 +453,21 @@ describe('Content Registry - sBTC Purchases', () => {
 
     const info = getTupleValue(purchaseInfo);
     expect(info['token-used']).toStrictEqual(Cl.stringAscii('sBTC'));
+    expect(info['amount-paid']).toStrictEqual(Cl.uint(100000));
   });
 
   it('cannot purchase same article twice with sBTC', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc')],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc'), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
     const { result } = simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc')],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-sbtc'), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -476,7 +522,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
     const stxResult = simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(2), Cl.uint(1250000)],
+      [Cl.uint(2), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader2
     );
     expect(stxResult.result).toBeOk(Cl.bool(true));
@@ -485,7 +531,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
     const sbtcResult = simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(3), Cl.contractPrincipal(deployer, 'mock-sbtc')],
+      [Cl.uint(3), Cl.contractPrincipal(deployer, 'mock-sbtc'), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -498,7 +544,6 @@ describe('Content Registry - Mixed Token Purchases', () => {
       [Cl.uint(1), Cl.principal(reader1)],
       deployer
     );
-
     expect(getTupleValue(purchase1)['token-used']).toStrictEqual(Cl.stringAscii('USDCx'));
 
     const purchase2 = simnet.callReadOnlyFn(
@@ -536,14 +581,14 @@ describe('Content Registry - Mixed Token Purchases', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(2), Cl.uint(625000)],
+      [Cl.uint(2), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-sbtc',
-      [Cl.uint(3), Cl.contractPrincipal(deployer, 'mock-sbtc')],
+      [Cl.uint(3), Cl.contractPrincipal(deployer, 'mock-sbtc'), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -561,6 +606,10 @@ describe('Content Registry - Mixed Token Purchases', () => {
 });
 
 describe('Content Registry - Writer Stats', () => {
+  beforeEach(() => {
+    initializeContracts();
+  });
+
   it('writer stats update after publishing', () => {
     simnet.callPublicFn(
       'content-registry',
@@ -599,7 +648,7 @@ describe('Content Registry - Writer Stats', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(1250000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
@@ -635,21 +684,21 @@ describe('Content Registry - Writer Stats', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(625000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(2), Cl.uint(1250000)],
+      [Cl.uint(2), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader2
     );
 
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(625000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader2
     );
 
@@ -668,6 +717,10 @@ describe('Content Registry - Writer Stats', () => {
 });
 
 describe('Content Registry - Platform Stats', () => {
+  beforeEach(() => {
+    initializeContracts();
+  });
+
   it('platform stats track correctly', () => {
     simnet.callPublicFn(
       'content-registry',
@@ -686,14 +739,14 @@ describe('Content Registry - Platform Stats', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(625000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(2), Cl.uint(1250000)],
+      [Cl.uint(2), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader2
     );
 
@@ -841,6 +894,10 @@ describe('Content Registry - Article Management', () => {
 });
 
 describe('Content Registry - Block Height Usage', () => {
+  beforeEach(() => {
+    initializeContracts();
+  });
+
   it('tracks publication block height', () => {
     const startHeight = getCurrentBlockHeight();
 
@@ -879,7 +936,7 @@ describe('Content Registry - Block Height Usage', () => {
     simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
-      [Cl.uint(1), Cl.uint(625000)],
+      [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-pyth-oracle')],
       reader1
     );
 
