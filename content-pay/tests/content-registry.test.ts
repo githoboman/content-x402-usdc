@@ -33,24 +33,42 @@ function getCurrentBlockHeight(): number {
 }
 
 // Helper to get tuple value from ClarityResult
-function getTupleValue(result: { result: ClarityValue }): any {
-  const clarityValue = result.result as any;
-  
-  // Handle optional types
-  if (clarityValue.type === 'optional' && clarityValue.value) {
-    return clarityValue.value.data;
+function getTupleValue(result: { result: ClarityValue }): Record<string, ClarityValue> {
+  let value = result.result as any;
+
+  // Debug: Log the structure to understand what we're dealing with
+  console.log('DEBUG: getTupleValue input:', JSON.stringify(value, null, 2));
+
+  // Unwrap response first
+  if (value.type === 'response') {
+    if (!value.value) return {};
+    value = value.value;
   }
-  
-  // Handle response types
-  if (clarityValue.type === 'response') {
-    if (clarityValue.ok) {
-      return clarityValue.value;
+
+  // Unwrap optional (some/none) - handle both 'optional' and 'some' types
+  if (value.type === 'optional' || value.type === 'some') {
+    if (!value.value) return {};
+    value = value.value;
+  }
+
+  // Debug: Log after unwrapping
+  console.log('DEBUG: after unwrapping:', JSON.stringify(value, null, 2));
+
+  // Return tuple data - it's a map of field names to Clarity values
+  if (value.type === 'tuple') {
+    if (value.data) {
+      console.log('DEBUG: returning tuple data:', JSON.stringify(value.data, null, 2));
+      return value.data;
     }
-    return null; // Error response
+    if (value.value) {
+      console.log('DEBUG: returning tuple value:', JSON.stringify(value.value, null, 2));
+      return value.value;
+    }
   }
-  
-  // Handle regular data values
-  return clarityValue.data || clarityValue.value;
+
+  // Fallback for non-tuple values
+  console.log('DEBUG: returning empty object');
+  return {};
 }
 
 describe('Content Registry - Article Publishing', () => {
@@ -161,7 +179,7 @@ describe('Content Registry - STX Purchases', () => {
       'purchase-with-stx',
       [
         Cl.uint(1), // article-id
-        Cl.uint(625000) // 0.625 STX
+        Cl.uint(625000) // 0.625 STX (equivalent to $0.50)
       ],
       reader1
     );
@@ -234,7 +252,7 @@ describe('Content Registry - STX Purchases', () => {
 describe('Content Registry - USDCx Purchases', () => {
   beforeEach(() => {
     initializeContracts();
-    
+
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
@@ -353,7 +371,7 @@ describe('Content Registry - USDCx Purchases', () => {
 describe('Content Registry - sBTC Purchases', () => {
   beforeEach(() => {
     initializeContracts();
-    
+
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
@@ -414,7 +432,7 @@ describe('Content Registry - sBTC Purchases', () => {
 describe('Content Registry - Mixed Token Purchases', () => {
   beforeEach(() => {
     initializeContracts();
-    
+
     simnet.callPublicFn(
       'content-registry',
       'publish-article',
@@ -446,20 +464,22 @@ describe('Content Registry - Mixed Token Purchases', () => {
     );
 
     // Reader1 uses USDCx for article 1
-    simnet.callPublicFn(
+    const usdcResult = simnet.callPublicFn(
       'content-registry',
       'purchase-with-usdcx',
       [Cl.uint(1), Cl.contractPrincipal(deployer, 'mock-usdc')],
       reader1
     );
+    expect(usdcResult.result).toBeOk(Cl.bool(true));
 
     // Reader2 uses STX for article 2
-    simnet.callPublicFn(
+    const stxResult = simnet.callPublicFn(
       'content-registry',
       'purchase-with-stx',
       [Cl.uint(2), Cl.uint(1250000)],
       reader2
     );
+    expect(stxResult.result).toBeOk(Cl.bool(true));
 
     // Reader1 uses sBTC for article 3
     const sbtcResult = simnet.callPublicFn(
@@ -478,6 +498,7 @@ describe('Content Registry - Mixed Token Purchases', () => {
       [Cl.uint(1), Cl.principal(reader1)],
       deployer
     );
+
     expect(getTupleValue(purchase1)['token-used']).toStrictEqual(Cl.stringAscii('USDCx'));
 
     const purchase2 = simnet.callReadOnlyFn(
@@ -839,7 +860,8 @@ describe('Content Registry - Block Height Usage', () => {
 
     const articleData = getTupleValue(article);
     const publishedAt = articleData['published-at'];
-    expect(publishedAt).toStrictEqual(Cl.uint(startHeight));
+    // Block height increases by 1 during the transaction
+    expect(publishedAt).toStrictEqual(Cl.uint(startHeight + 1));
   });
 
   it('tracks purchase block height', () => {
@@ -870,6 +892,7 @@ describe('Content Registry - Block Height Usage', () => {
 
     const purchaseData = getTupleValue(purchaseInfo);
     const purchasedAt = purchaseData['purchased-at'];
-    expect(purchasedAt).toStrictEqual(Cl.uint(purchaseHeight));
+    // Block height increases by 1 during the transaction
+    expect(purchasedAt).toStrictEqual(Cl.uint(purchaseHeight + 1));
   });
 });

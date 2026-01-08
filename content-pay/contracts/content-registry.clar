@@ -175,14 +175,14 @@
       (reader tx-sender)
       (author (get author article))
       (price (get price-usd article))
-      (writer-amount (calculate-writer-amount stx-amount))
-      (platform-fee (calculate-platform-fee stx-amount))
+      (writer-amount (calculate-writer-amount price))
+      (platform-fee (calculate-platform-fee price))
     )
     ;; Validations
     (asserts! (get is-active article) ERR-ARTICLE-NOT-FOUND)
     (asserts! (not (has-purchased article-id reader)) ERR-ALREADY-PURCHASED)
     
-    ;; Transfer STX to writer (using actual STX amount for transfers)
+    ;; Transfer STX to writer (using USD price for calculations)
     (try! (stx-transfer? writer-amount reader author))
     
     ;; Transfer platform fee
