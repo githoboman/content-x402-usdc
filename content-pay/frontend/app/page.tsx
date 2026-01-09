@@ -1,65 +1,58 @@
-import Image from "next/image";
+'use client';
+
+import ConnectWallet from '../components/ConnectWallet';
+import GradientBackground from '../components/GradientBackground';
+import PublishArticle from '../components/PublishArticle';
+import ArticleFeed from '../components/ArticleFeed';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <GradientBackground>
+      <main className="flex min-h-screen flex-col items-center p-8 md:p-24">
+        {/* Header */}
+        <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex mb-12">
+          <p className="fixed left-0 top-0 flex w-full justify-center border-b border-white/10 bg-black/20 pb-6 pt-8 backdrop-blur-2xl lg:static lg:w-auto lg:rounded-xl lg:border lg:p-4">
+            Content Pay - Testnet Demo
+          </p>
+          <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-black via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
+            <ConnectWallet />
+          </div>
+        </div>
+
+        {/* Hero */}
+        <div className="relative flex flex-col items-center text-center mb-16">
+          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 mb-4 drop-shadow-lg">
+            Hybrid Oracle Platform
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg text-gray-300 max-w-2xl">
+            Publish in USD. Earn in Crypto. <br />
+            Powered by Stacks, sBTC, and Pyth Network.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Content Area */}
+        <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
+          {/* Left: Publish (Writer) */}
+          <div className="flex flex-col items-center space-y-8">
+            <div className="w-full max-w-md">
+              <div className="mb-4 flex items-center gap-2">
+                <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-200 bg-indigo-900/50 rounded-full">Writer Mode</span>
+              </div>
+              <PublishArticle />
+            </div>
+          </div>
+
+          {/* Right: Article Feed (Reader) */}
+          <div className="flex flex-col items-center w-full">
+            <div className="mb-4 w-full max-w-2xl flex items-center gap-2">
+              <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-green-200 bg-green-900/50 rounded-full">Reader Mode</span>
+            </div>
+            <ArticleFeed />
+          </div>
+
         </div>
       </main>
-    </div>
+    </GradientBackground>
   );
 }

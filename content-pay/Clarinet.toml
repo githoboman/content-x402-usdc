@@ -11,12 +11,12 @@ path = "contracts/sip-010-trait-ft-standard.clar"
 clarity_version = 2
 epoch = 2.5
 
-[contracts.mock-sbtc]
+[contracts.mock-sbtc-v1]
 path = "contracts/mock-sbtc.clar"
 clarity_version = 2
 epoch = 2.5
 
-[contracts.mock-usdc]
+[contracts.mock-usdc-v1]
 path = "contracts/mock-usdc.clar"
 clarity_version = 2
 epoch = 2.5
@@ -26,7 +26,7 @@ path = "contracts/pyth-oracle-trait.clar"
 clarity_version = 2
 epoch = 2.5
 
-[contracts.mock-pyth-oracle]
+[contracts.mock-pyth-oracle-v1]
 path = "contracts/mock-pyth-oracle.clar"
 clarity_version = 2
 epoch = 2.5

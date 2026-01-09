@@ -1,7 +1,7 @@
 ;; mock-usdc.clar
 ;; A mock USDC token for testing purposes conforming to SIP-010
 
-(impl-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-010-trait-ft-standard.sip-010-trait)
+(impl-trait .sip-010-trait-ft-standard.sip-010-trait)
 
 (define-fungible-token mock-usdc)
 

@@ -11,30 +11,9 @@ plan:
 
         - contract-publish:
             contract-name: content-registry
-            expected-sender: ST9NSDHK5969YF6WJ2MRCVVAVTDENWBNTFJRVZ3E
-            cost: 141790
+            expected-sender: ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65
+            cost: 3351652
             path: "contracts\\content-registry.clar"
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: mock-pyth-oracle
-            expected-sender: ST9NSDHK5969YF6WJ2MRCVVAVTDENWBNTFJRVZ3E
-            cost: 10600
-            path: "contracts\\mock-pyth-oracle.clar"
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: mock-sbtc
-            expected-sender: ST9NSDHK5969YF6WJ2MRCVVAVTDENWBNTFJRVZ3E
-            cost: 13230
-            path: "contracts\\mock-sbtc.clar"
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: mock-usdc
-            expected-sender: ST9NSDHK5969YF6WJ2MRCVVAVTDENWBNTFJRVZ3E
-            cost: 13220
-            path: "contracts\\mock-usdc.clar"
             anchor-block-only: true
             clarity-version: 2
       epoch: "2.5"
