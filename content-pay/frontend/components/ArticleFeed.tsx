@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useConnect } from '@stacks/connect-react';
 import { STACKS_TESTNET, STACKS_MAINNET } from '@stacks/network';
 import { openContractCall } from '@stacks/connect';
@@ -13,30 +14,11 @@ import {
     standardPrincipalCV,
 } from '@stacks/transactions';
 import { userSession, appDetails } from '../lib/stacks';
+import { CONFIG, ORACLE_NAME, SBTC_NAME, USDC_NAME } from '../lib/config';
 
 // ====== CONFIGURATION ======
-const NETWORK_TYPE = 'testnet'; // Change to 'mainnet' for production
+// Configuration imported from ../lib/config
 
-const TESTNET_CONFIG = {
-    deployer: 'ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65',
-    contractName: 'content-registry',
-    network: STACKS_TESTNET,
-    apiUrl: 'https://api.testnet.hiro.so',
-};
-
-const MAINNET_CONFIG = {
-    deployer: 'SP1234...', // Update when ready
-    contractName: 'content-registry',
-    network: STACKS_MAINNET,
-    apiUrl: 'https://api.mainnet.hiro.so',
-};
-
-const CONFIG = NETWORK_TYPE === 'testnet' ? TESTNET_CONFIG : MAINNET_CONFIG;
-
-// Constants
-const ORACLE_NAME = 'mock-pyth-oracle-v1';
-const SBTC_NAME = 'mock-sbtc-v1';
-const USDC_NAME = 'mock-usdc-v1';
 
 interface Article {
     id: number;
@@ -263,17 +245,9 @@ export default function ArticleFeed() {
                             ${(article.priceUsd / 100).toFixed(2)}
                         </div>
                         {!article.isPurchased && (
-                            <div className="flex gap-2">
-                                <button onClick={() => handleBuy(article.id, 'STX')} className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 rounded text-xs font-bold text-white">
-                                    Buy w/ STX
-                                </button>
-                                <button onClick={() => handleBuy(article.id, 'sBTC')} className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 rounded text-xs font-bold text-white">
-                                    Buy w/ sBTC
-                                </button>
-                                <button onClick={() => handleBuy(article.id, 'USDC')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold text-white">
-                                    Buy w/ USDC
-                                </button>
-                            </div>
+                            <Link href={`/article/${article.id}`} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-bold text-white transition-colors">
+                                View & Buy
+                            </Link>
                         )}
                     </div>
                 </div>

@@ -4,6 +4,7 @@ import ConnectWallet from '../components/ConnectWallet';
 import GradientBackground from '../components/GradientBackground';
 import PublishArticle from '../components/PublishArticle';
 import ArticleFeed from '../components/ArticleFeed';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -36,8 +37,11 @@ export default function Home() {
           {/* Left: Publish (Writer) */}
           <div className="flex flex-col items-center space-y-8">
             <div className="w-full max-w-md">
-              <div className="mb-4 flex items-center gap-2">
+              <div className="mb-4 flex items-center justify-between gap-2">
                 <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-200 bg-indigo-900/50 rounded-full">Writer Mode</span>
+                <Link href="/publish" className="text-xs text-indigo-300 hover:text-white underline">
+                  Go to Full Page ↗
+                </Link>
               </div>
               <PublishArticle />
             </div>

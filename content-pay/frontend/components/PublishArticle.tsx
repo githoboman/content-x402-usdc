@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useConnect } from '@stacks/connect-react';
-import { STACKS_TESTNET } from '@stacks/network';
 import { openContractCall } from '@stacks/connect';
 import {
     uintCV,
     stringAsciiCV,
     PostConditionMode,
 } from '@stacks/transactions';
+import { CONFIG } from '../lib/config';
 
 export default function PublishArticle() {
     const [title, setTitle] = useState('');
@@ -16,9 +16,9 @@ export default function PublishArticle() {
     const [category, setCategory] = useState('Tech');
     const [isPublishing, setIsPublishing] = useState(false);
 
-    // Hardcoded for Testnet Demo
-    const contractAddress = 'ST9NSDHK5969YF6WJ2MRCVVAVTDENWBNTFJRVZ3E';
-    const contractName = 'content-registry';
+    // Config from shared lib
+    const contractAddress = CONFIG.deployer;
+    const contractName = CONFIG.contractName;
 
     const handlePublish = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,7 +40,7 @@ export default function PublishArticle() {
             contractName,
             functionName: 'publish-article',
             functionArgs,
-            network: STACKS_TESTNET,
+            network: CONFIG.network,
             postConditionMode: PostConditionMode.Allow,
             onFinish: (data: any) => {
                 console.log('Transaction:', data);
