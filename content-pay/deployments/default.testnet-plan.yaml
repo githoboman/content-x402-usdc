@@ -8,12 +8,11 @@ plan:
   batches:
     - id: 0
       transactions:
-
         - contract-publish:
-            contract-name: content-registry
+            contract-name: content-registry-v2
             expected-sender: ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65
-            cost: 3351652
-            path: "contracts\\content-registry.clar"
+            cost: 112000
+            path: contracts/content-registry.clar
             anchor-block-only: true
             clarity-version: 2
       epoch: "2.5"

@@ -54,11 +54,22 @@ export default function ConnectWallet() {
     }
 
     return (
-        <button
-            onClick={handleConnect}
-            className="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30"
-        >
-            Connect Wallet
-        </button>
+        <div className="flex flex-col items-center gap-2">
+            <button
+                onClick={handleConnect}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30"
+            >
+                Connect Wallet
+            </button>
+            <button
+                onClick={() => {
+                    localStorage.clear();
+                    window.location.reload();
+                }}
+                className="text-xs text-gray-500 hover:text-red-400 underline"
+            >
+                Reset Session (Fix Connection)
+            </button>
+        </div>
     );
 }

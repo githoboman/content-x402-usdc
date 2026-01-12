@@ -100,7 +100,32 @@
   )
 )
 
-;; ... (publish-article remains same) ...
+;; Publish a new article
+(define-public (publish-article (title (string-ascii 256)) (content-hash (string-ascii 64)) (price uint) (category (string-ascii 50)))
+  (let
+    (
+      (article-id (+ (var-get article-counter) u1))
+    )
+    (map-set articles article-id {
+      author: tx-sender,
+      title: title,
+      content-hash: content-hash,
+      price-usd: price,
+      category: category,
+      active: true,
+      published-at: block-height
+    })
+    (var-set article-counter article-id)
+    (print {
+      event: "publish",
+      article-id: article-id,
+      author: tx-sender,
+      price-usd: price,
+      category: category
+    })
+    (ok article-id)
+  )
+)
 
 ;; ===== PURCHASE FUNCTIONS =====
 

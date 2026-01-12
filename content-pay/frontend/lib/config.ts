@@ -5,7 +5,7 @@ export const NETWORK_TYPE = 'testnet'; // Change to 'mainnet' for production
 
 const TESTNET_CONFIG = {
     deployer: 'ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65',
-    contractName: 'content-registry',
+    contractName: 'content-registry-v2',
     network: STACKS_TESTNET,
     apiUrl: 'https://api.testnet.hiro.so',
 };
