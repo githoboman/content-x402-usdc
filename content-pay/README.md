@@ -11,168 +11,80 @@ A micropayment content platform built on the Stacks blockchain using Clarity sma
 - **Analytics**: Track writer earnings, reader purchases, and platform statistics
 - **Testnet Ready**: Fully functional on Stacks testnet
 
+## Live Demo (Testnet)
+
+- **Frontend**: `http://localhost:3000` (Local)
+- **Contract Address**: `ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65.content-registry-v2`
+- **Mock Tokens**:
+    - sBTC: `ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65.mock-sbtc-v1`
+    - USDCx: `ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65.mock-usdc-v1`
+    - Pyth Oracle: `ST34SWDZ8QJEB124ZBEVN6A69DDVQXNVH66AJKY65.mock-pyth-oracle-v1`
+
 ## Architecture
 
-The platform consists of a single Clarity smart contract (`content-registry.clar`) that manages:
+The platform consists of a **Next.js Frontend** and **Clarity Smart Contracts**:
 
-- Article metadata and content hashes
-- Purchase tracking and access control
-- Writer and reader statistics
-- Multi-token payment processing
-- Platform revenue collection
+1.  **Smart Contracts** (`contracts/`):
+    - `content-registry-v2.clar`: Main logic for publishing and purchasing.
+    - `mock-*.clar`: Testnet mocks for sBTC, USDC, and Pyth Oracle.
 
-## Prerequisites
+2.  **Frontend** (`frontend/`):
+    - **Publish Page** (`/publish`): Register new articles on-chain.
+    - **Article Feed** (`/`): Browse published content.
+    - **Purchase Page** (`/article/[id]`): Buy content with STX, sBTC, or USDCx.
 
-- [Clarinet](https://github.com/hirosystems/clarinet) - Stacks development environment
-- Node.js (for running tests)
-- npm or yarn
+## Quick Start
 
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd content-pay
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Install Clarinet (if not already installed):
-   ```bash
-   # Follow instructions at https://github.com/hirosystems/clarinet
-   ```
-
-## Testing
-
-Run the test suite:
+### 1. Smart Contracts
+Install [Clarinet](https://github.com/hirosystems/clarinet).
 
 ```bash
+# Run tests
 npm test
 ```
 
-For test coverage and cost analysis:
+### 2. Frontend Application
+Ensure you have Node.js 18+.
 
 ```bash
-npm run test:report
+cd frontend
+npm install
+npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000).
 
-Watch mode for development:
+### 3. Usage Guide
 
-```bash
-npm run test:watch
-```
+**Writer Mode (Publishing)**:
+1.  Connect your Stacks Wallet (Leather/Xverse).
+2.  Click "Writer Mode" -> "Go to Full Page".
+3.  Enter Title, Price (in Cents), and Category.
+4.  Click "Publish" and confirm the transaction.
 
-## Deployment
+**Reader Mode (Buying)**:
+1.  Browse the feed on the Home page.
+2.  Click "View & Buy" on an article.
+3.  Select your currency (STX / sBTC / USDCx).
+4.  Confirm transaction to unlock the content.
 
-### Testnet Deployment
+## Troubleshooting
 
-1. Configure your deployment settings in `settings/Devnet.toml`
+- **Wallet Connection Error** (`Failed to get selected account`):
+    - Cause: Conflict between multiple installed wallets (e.g., Xverse AND Leather).
+    - Fix: Disable one extension in Chrome or use Incognito Mode.
+- **Hydration Errors**:
+    - You may see a red "1 Issue" badge on localhost. This is a Next.js warning and does not affect functionality.
 
-2. Check the contract:
-   ```bash
-   clarinet check
-   ```
-
-3. Deploy to testnet:
-   ```bash
-   clarinet deployments generate --devnet
-   clarinet deployments apply --devnet
-   ```
-
-### Mainnet Deployment
-
-**⚠️ WARNING: Mainnet deployment requires careful review and testing**
-
-1. Update token contract addresses in `contracts/content-registry.clar`:
-   - Replace sBTC testnet contract with mainnet contract
-   - Add actual USDCx mainnet contract address
-
-2. Update `settings/Mainnet.toml` (create if needed)
-
-3. Deploy:
-   ```bash
-   clarinet deployments generate --mainnet
-   clarinet deployments apply --mainnet
-   ```
-
-## Usage
-
-### Publishing Content
-
-Call the `publish-article` function with:
-- `title`: Article title (max 256 characters)
-- `content-hash`: IPFS CID or content hash (64 characters)
-- `price-usd`: Price in USD cents (e.g., 500 = $5.00)
-- `category`: Content category (max 50 characters)
-
-### Purchasing Content
-
-Choose payment method:
-
-- **STX**: `purchase-with-stx(article-id, stx-amount)`
-- **sBTC**: `purchase-with-sbtc(article-id)`
-- **USDCx**: `purchase-with-usdcx(article-id)` (requires USDCx contract setup)
-
-### Reading Content
-
-After purchase, use `has-purchased(article-id, reader)` to check access, then retrieve content using the stored `content-hash`.
-
-## Contract Functions
-
-### Read-only Functions
-- `get-article(article-id)` - Get article metadata
-- `has-purchased(article-id, reader)` - Check purchase status
-- `get-writer-stats(writer)` - Get writer statistics
-- `get-reader-stats(reader)` - Get reader statistics
-- `get-platform-stats()` - Get platform statistics
-
-### Public Functions
-- `publish-article(title, content-hash, price-usd, category)` - Publish new content
-- `purchase-with-stx(article-id, stx-amount)` - Purchase with STX
-- `purchase-with-sbtc(article-id)` - Purchase with sBTC
-- `purchase-with-usdcx(article-id)` - Purchase with USDCx
-- `deactivate-article(article-id)` - Deactivate content (author only)
-- `update-article-price(article-id, new-price)` - Update price (author only)
-
-## Token Support
-
-### STX (Stacks Token)
-- Fully implemented
-- Direct STX transfers with platform fee deduction
-
-### sBTC (Stacks BTC)
-- Testnet ready
-- Uses Hiro Platform sBTC contract
-- Mainnet: Update contract address to mainnet sBTC token
-
-### USDCx (USD Coin)
-- Placeholder implementation
-- Requires deployment of USDC SIP-010 token contract
-- Update `USDCX-TOKEN` constant with actual contract address
-
-## Security Considerations
-
-- All payments are final and non-refundable
-- Content hashes are stored on-chain but content is off-chain
-- Platform takes 3% fee on all transactions
-- Contract owner can update platform treasury address
-
-## Development
-
-### Project Structure
+## Project Structure
 ```
 content-pay/
-├── contracts/
-│   └── content-registry.clar    # Main smart contract
-├── tests/
-│   └── content-registry.test.ts # Unit tests
-├── settings/
-│   └── Devnet.toml             # Testnet configuration
-├── Clarinet.toml               # Project configuration
-└── package.json               # Node.js dependencies
+├── contracts/               # Clarity smart contracts
+├── frontend/               # Next.js App Router application
+│   ├── app/                # Pages (/publish, /article/[id])
+│   ├── components/         # React components
+│   └── lib/                # Config and Stacks.js helpers
+├── tests/                  # Contract unit tests
+└── deployments/            # Clarinet deployment plans
 ```
 
 ### Adding New Features

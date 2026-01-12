@@ -195,16 +195,53 @@ export default function ArticleFeed() {
         );
     }
 
-    // Show specific message if no articles
+    // Show specific message if no articles, BUT for testing, show a Mock Article
     if (articles.length === 0) {
+        // MOCK DATA FOR TESTING PURCHASE FLOW
+        const mockArticle: Article = {
+            id: 1,
+            title: "Test Article (Mock for Testing)",
+            author: CONFIG.deployer,
+            priceUsd: 150, // $1.50
+            category: "Testing",
+            contentHash: "QmMockHashForTesting",
+            isPurchased: false
+        };
+
         return (
-            <div className="text-center p-8 bg-white/5 rounded-xl border border-white/10">
-                <h3 className="text-xl font-bold text-white mb-2">Waiting for Articles</h3>
-                <p className="text-gray-400 mb-4">
-                    The content registry is active but no articles have been published yet.
-                </p>
-                <div className="text-xs text-gray-500 font-mono">
-                    Contract: {CONFIG.deployer}.{CONFIG.contractName}
+            <div className="w-full max-w-2xl space-y-6">
+                <div className="bg-yellow-900/20 border border-yellow-500/30 p-4 rounded-xl mb-6">
+                    <p className="text-yellow-200 text-sm text-center">
+                        ⚠️ No live articles found. Showing a <strong>Mock Article</strong> to test the connection.
+                    </p>
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-4">Latest Articles</h2>
+
+                <div key={mockArticle.id} className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-xl font-semibold text-white">{mockArticle.title}</h3>
+                        <span className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-1 rounded">{mockArticle.category}</span>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-4">
+                        By {mockArticle.author.slice(0, 6)}...{mockArticle.author.slice(-4)}
+                    </p>
+
+                    <div className="bg-black/30 rounded-lg p-4 mb-4">
+                        <div className="text-gray-500 italic">
+                            🔒 Content Locked. Purchase to view.
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
+                        <div className="text-white font-bold text-lg">
+                            ${(mockArticle.priceUsd / 100).toFixed(2)}
+                        </div>
+                        <Link href={`/article/${mockArticle.id}?mock=true`} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-bold text-white transition-colors">
+                            View & Buy
+                        </Link>
+                    </div>
                 </div>
             </div>
         );
